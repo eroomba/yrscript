@@ -1,0 +1,863 @@
+
+let yrReserved = {
+    "YRTOK_PLUS": "+",
+    "YRTOK_MINUS": "-",
+    "YRTOK_STAR": "*",
+    "YRTOK_SLASH": "/",
+    "YRTOK_DOT": ".",
+    "YRTOK_COMMA": ",",
+    "YRTOK_HASH": "#",
+    "YRTOK_BREAK": " "
+}
+let yrKeywordsDefault = {
+    "help": "help",
+    "print": "print",
+    "echo": "echo",
+    "skey": "setkey",
+    "pnkeys": "printkeys",
+    "var": "set",
+    "if": "if",
+    "while": "while",
+    "do": "do",
+    "end": "end",
+    "eq": "eq",
+    "neq": "neq",
+    "lt": "lt",
+    "gt": "gt",
+    "lteq": "lteq",
+    "gteq": "gteq",
+    "assign": "to",
+    "eob": "\;"
+};
+let yrKeywords = yrKeywordsDefault;
+
+let yrKeywordsDetail = {
+    "help": {
+        "desc": "Get help",
+        "help": "{key} [COMMAND]"
+    },
+    "print": {
+        "desc": "Print a string",
+        "help": "{key} \"[PRINT_STRING]\""
+    },
+    "echo": {
+        "desc": "Print last result",
+        "help": "{key}"
+    },
+    "skey": {
+        "desc": "Set keyword",
+        "help": "{key} [OLD_VALUE] [NEW_VALUE]"
+    },
+    "pnkeys": {
+        "desc": "Print current keywords",
+        "help": "{key}"
+    },
+    "var": {
+        "desc": "Variable declaration",
+        "help": "{key} [VARIABLE_NAME] = [VALUE]"
+    },
+    "if": {
+        "desc": "If statement. Run [CODE_TO_RUN] if [CODE_TO_CHECK] is true (not equal to 0).",
+        "help": "{key} [CODE_TO_CHECK] {do-cmd} [CODE_TO_RUN] {end-cmd}"
+    },
+    "while": {
+        "desc": "While loop. Run [CODE_TO_RUN] until [CODE_TO_CHECK] isn't true (equals 0).\n(It won't loop more times than the [maxloop] setting for safety)",
+        "help": "{key} [CODE_TO_CHECK] {do-cmd} [CODE_TO_RUN] {end-cmd}"
+    },
+    "do": {
+        "desc": "Do command. Run [CODE_TO_RUN] until {end-cmd}.",
+        "help": "{key} [CODE_TO_RUN] {end-cmd}"
+    },
+    "end": {
+        "desc": "End a set of commands.",
+        "help": "{do-cmd} [CODE_TO_CHECK] {key}"
+    },
+    "eq": {
+        "desc": "Equal to.",
+        "help": "[VALUE] {key} [VALUE]"
+    },
+    "neq": {
+        "desc": "Not equal to.",
+        "help": "[VALUE] {key} [VALUE]"
+    },
+    "gt": {
+        "desc": "Greater than.",
+        "help": "[VALUE] {key} [VALUE]"
+    },
+    "lt": {
+        "desc": "Less than.",
+        "help": "[VALUE] {key} [VALUE]"
+    },
+    "gteq": {
+        "desc": "Greater than or equal to.",
+        "help": "[VALUE] {key} [VALUE]"
+    },
+    "lteq": {
+        "desc": "Less than or equal to.",
+        "help": "[VALUE] {key} [VALUE]"
+    },
+    "assign": {
+        "desc": "Assign value to variable.",
+        "help": "[VARIABLE_NAME] {key} [VALUE]"
+    },
+    "eob": {
+        "desc": "End the current block of code.",
+        "help": "[CODE]{key}"
+    }
+
+}
+
+let yrKeywordType = {
+    "eq": "YRTOK_COMP",
+    "neq": "YRTOK_COMP",
+    "lt": "YRTOK_COMP",
+    "gt": "YRTOK_COMP",
+    "lteq": "YRTOK_COMP",
+    "gteq": "YRTOK_COMP",
+    "assign": "YRTOK_ASSIGN",
+    "eob": "YRTOK_EOB"
+}
+
+let yrSettingsDefault = {
+    "maxloop": 10
+}
+
+let ctxIdx = 0;
+
+function yrContext(op) {
+    this.id = "<ctx" + ctxIdx++ + ">";
+    this.stack = new Array();
+    this.parent = "";
+    this.heap = new Array();
+
+    if (op != undefined && op != null) {
+        if (op.id != undefined && op.id != null)
+            this.id = op.id;
+        if (op.parent != undefined && op.parent != null)
+            this.parent = op.parent;
+    }
+}
+
+function yrEnvironment(op) {
+    this.id = "<env>";
+    this.memory = null;
+    this.keywords = yrKeywords;
+    this.settings = yrSettingsDefault;
+    this.contexts = {};
+    this.contextId = "<envctx>";
+    this.currentContext = this.contextId;
+    this.setVocab = function() {
+        this.keywords = yrKeywords;
+    };
+
+    this.contexts[this.contextId] = new yrContext({id: this.contextId});
+}
+
+function yrFlipDict(dict) {
+    let retDict = {};
+    for (key in dict) {
+        retDict[dict[key]] = key;
+    }
+    return retDict;
+}
+
+function yrLex(code) {
+    let tokens = new Array();
+    let digits = "0123456789";
+    let fdigits = digits + ".";
+    let detectBreakCount = 0;
+    let detectAssign = 0;
+
+    let cReserved = yrFlipDict(yrReserved);
+
+    let c = 0;
+    while(c < code.length) {
+        if (code[c] == yrReserved["YRTOK_HASH"]) {
+            yrcn.print("");
+            c = code.length + 2;
+            if (detectBreakCount > 0) detectBreakCount--;
+        }
+        else if (digits.indexOf(code[c]) >= 0) {
+            let hasDot = false;
+            let val = "";
+            let type = "YRTOK_DOUBLE";
+            while (c < code.length && fdigits.indexOf(code[c])>=0) {
+                val += code[c];
+                if (code[c] == '.')
+                    hasDot = true;
+                c++;
+            }
+            if (!hasDot) {
+                tokens.push({"type": "YRTOK_INTEGER", "val": val});
+            }
+            else {
+                tokens.push({"type": "YRTOK_DOUBLE", "val": val});
+            }
+        }
+        else if (code[c] == '\"') {
+            let val = "";
+            c++;
+            while(c < code.length && code[c] != '\"') {
+                val += code[c];
+                c++;
+            }
+            c++;
+
+            tokens.push({"type": "YRTOK_STRING", "val": val });
+        }
+        else if (cReserved[code[c]] != undefined && cReserved[code[c]] != null) {
+            if (cReserved[code[c]] == "YRTOK_BREAK" && detectBreakCount > 0) {
+                //detectBreakCount--;
+                //tokens.push({ "type": cTokens[code[c]], "val": code[c]});
+            }
+            else if (cReserved[code[c]] != "YRTOK_BREAK") {
+                tokens.push({ "type": cReserved[code[c]], "val": code[c]});
+            }
+            c++;
+        }
+        else if (code[c] == yrenv.keywords["eob"]) {
+            tokens.push({"type": "YRTOK_EOB", "val": code[c]});
+            c++;
+        }
+        else if (/^[a-zA-Z]$/.test(code[c]) || "{}()[]=<>".indexOf(code[c])>=0) {
+            let val = "";
+            let hVal = "";
+            let hasVal = false;
+            while(!hasVal && c < code.length && (/^[a-zA-Z0-9]$/.test(code[c]) || "{}()[]=<>".indexOf(code[c])>=0)) {
+                if ("{}()[]=<>".indexOf(code[c])>=0 && !hasVal) {
+                    val = code[c] + "";
+                    hasVal = true;
+                }
+
+                if (!hasVal) {
+                    val += code[c]; 
+                }
+                c++;
+            }
+            
+            let cKeywords = yrFlipDict(yrenv.keywords);
+
+            if (cKeywords[val] != undefined && cKeywords[val] != null) {
+                if (val == yrenv.keywords["do"] && detectBreakCount > 0) {
+                    detectBreakCount--;
+                    tokens.push({ "type": "YRTOK_BREAK", "val": ""});
+                }
+                let kType = "YRTOK_KEYWORD";
+                if (yrKeywordType[cKeywords[val]] != undefined)
+                    kType = yrKeywordType[cKeywords[val]];
+                    
+                tokens.push({"type": kType, "val": val });
+            }
+            else {
+                tokens.push({"type": "YRTOK_IDENT", "val": val });
+            }
+            
+        }
+        else {
+            c++;
+        }
+            
+    }
+    if (detectBreakCount > 0) {
+        tokens.push({ "type": "YRTOK_BREAK", "val": ""});
+    }
+    tokens.push({ "type": "YRTOK_EOB", "val": ""});
+
+    return tokens;
+}
+
+function yrGetVariable(ident) {
+    if (yrenv.contexts[yrenv.currentContext].heap[ident] != undefined && yrenv.contexts[yrenv.currentContext].heap[ident] != null) {
+        return {
+            "type": yrenv.contexts[yrenv.currentContext].heap[ident].type,
+            "val": yrenv.contexts[yrenv.currentContext].heap[ident].val
+        }
+    }
+    else {
+        yrcn.printn("ERROR: Variable '" + ident + "' not defined.");
+        return null;
+    }
+}
+
+function yrRun(tokens,start,end) {
+
+    let end2 = end < 0 ? tokens.length : end;
+
+    let exitBlock = false;
+
+    let cursorStart = 0;
+    let cursorEnd = 0;
+
+    let runEnd = false;
+    let runEndStart = 0;
+
+    let r = start;
+    cursorStart = r;
+    cursorEnd = r-1;
+    if (tokens.length>0) {
+        while (r < end2 && !exitBlock) {
+            let type = tokens[r].type;
+            let val = tokens[r].val;
+            let type2 = type;
+            let val2 = val;
+            if (type=="YRTOK_IDENT") {
+                let iVal = yrGetVariable(val);
+                if (iVal != null) {
+                    type2 = iVal.type;
+                    val2 = iVal.val;
+                }
+            }
+    
+            if ((val2 + "").length == 0) {
+                r++;
+            }
+            else if (type == "YRTOK_EOB") {
+                exitBlock = true;
+                runEnd = true;
+                runEndStart = r+1;
+            }
+            else if (type == "YRTOK_KEYWORD") {
+                if (val == yrenv.keywords["help"]) {
+                    r++;
+                    let hMode = "";
+                    if (r < end2 && (tokens[r].type == "YRTOK_IDENT" || tokens[r].type == "YRTOK_KEYWORD" || tokens[r].type == "YRTOK_COMP" || tokens[r].type == "YRTOK_ASSIGN")) {
+                        hMode = tokens[r].val;
+                        r++;
+                    }
+    
+                    if (hMode.length == 0) {
+                        yrcn.printn(genHelp[0]);
+                        
+                        let kyFlip = yrFlipDict(yrenv.keywords);
+    
+                        for (hMode in kyFlip) {
+                            yrcn.printn(hMode);
+                            yrcn.printn(yrKeywordsDetail[kyFlip[hMode]].desc.replace("{do-cmd}",yrenv.keywords["do"]).replace("{end-cmd}",yrenv.keywords["end"]));
+                            yrcn.printn("USAGE: " + yrKeywordsDetail[kyFlip[hMode]].help.replace("{key}",hMode).replace("{do-cmd}",yrenv.keywords["do"]).replace("{end-cmd}",yrenv.keywords["end"]));
+                            yrcn.printn("");
+                        }
+    
+                        yrcn.printn(genHelp[1]);
+                    }
+                    else {
+                        let kyFlip = yrFlipDict(yrenv.keywords);
+                        
+                        if (kyFlip[hMode] != undefined && kyFlip[hMode] != null) {
+                            yrcn.printn("");
+                            yrcn.printn(hMode);
+                            yrcn.printn(yrKeywordsDetail[kyFlip[hMode]].desc.replace("{do-cmd}",yrenv.keywords["do"]).replace("{end-cmd}",yrenv.keywords["end"]));
+                            yrcn.printn("USAGE: " + yrKeywordsDetail[kyFlip[hMode]].help.replace("{key}",hMode).replace("{do-cmd}",yrenv.keywords["do"]).replace("{end-cmd}",yrenv.keywords["end"]));
+                            yrcn.printn("");
+                        }
+                        else {
+                            yrcn.printn("Can't help right now...");
+                        }
+                    }
+                    exitBlock = true;
+                    cursorStart = r;
+                    cursorEnd = r-1;
+                }
+                else if (val == yrenv.keywords["print"]) {
+                    let hasPrint = true;
+                    let printVal = "";
+                    r++;
+                    while (r < end2 && hasPrint && (tokens[r].type == "YRTOK_STRING" || tokens[r].type == "YRTOK_DOUBLE" || tokens[r].type == "YRTOK_INTEGER" || tokens[r].type == "YRTOK_IDENT")) {
+                        if (tokens[r].type == "YRTOK_STRING" || tokens[r].type == "YRTOK_DOUBLE" || tokens[r].type == "YRTOK_INTEGER") {
+                            var pRes = tokens[r].val;
+                            printVal += pRes;
+                            r++;
+                        }
+                        else if (tokens[r].type == "YRTOK_IDENT" ) {
+                            let vName = tokens[r].val;
+                            let v2 = yrGetVariable(vName);
+                            if (v2 != null) {
+                                printVal += v2.val;
+                                r++;
+                            }
+                            else {
+                                yrcn.printn("ERROR: Variable '" + vName + "' not defined.");
+                                exitBlock = true;
+                                hasPrint = false;
+                            }
+                        }
+                        if (r < end2 && tokens[r].type == "YRTOK_COMMA") {
+                            r++;
+                        }
+                    }
+                    if (hasPrint) {
+                        yrcn.printn(printVal);
+                        yrenv.memory = { "type": "YRTOK_STRING", "val": printVal };
+                    }
+                    cursorStart = r;
+                    cursorEnd = r-1;
+                }
+                else if (val == yrenv.keywords["echo"]) {
+                    r++;
+                    if (yrenv.memory == null)
+                        yrcn.printn("<empty>");
+                    else
+                        yrcn.printn(yrenv.memory.val);
+                    
+                    cursorStart = r;
+                    cursorEnd = r-1;
+                }
+                else if (val == yrenv.keywords["skey"]) {
+                    let keyword = "";
+                    let newKeyword = "";
+                    r++;
+                    if (r < end2 && tokens[r].type == "YRTOK_KEYWORD") {
+                        keyword = tokens[r].val;
+                        r++;
+                    }
+                    if (r < end2 && tokens[r].type == "YRTOK_IDENT") {
+                        newKeyword = tokens[r].val;
+                        r++;
+                    }
+                    let kyFlip = yrFlipDict(yrenv.keywords);
+                    if (keyword.length > 0 && newKeyword.length > 0 && (kyFlip[keyword] != undefined && kyFlip[keyword] != null)) {
+                        let keyM = kyFlip[keyword];
+                        let smallVal = false;
+                        if (keyM[newKeyword] != undefined && keyM[newKeyword] != null) {
+                            yrcn.printn("ERROR: '" + newKeyword + "' is already a command.");
+                            exitBlock = true;
+                        }
+                        else if (yrenv.contexts[yrenv.currentContext].heap[newKeyword] != undefined) {
+                            yrcn.printn("ERROR: '" + newKeyword + "' is a variable name.");
+                            exitBlock = true;
+                        }
+                        else {
+                            yrKeywords[keyM] = newKeyword;
+                            yrenv.setVocab();
+                            yrcn.printn("set '" + keyword + "' to '" + newKeyword + "'");
+                            if ("(){}[]=<>".indexOf(newKeyword)>=1) smallVal = true;
+                        }
+
+                        if (smallVal && tokens[r].type == "YRTOK_IDENT") {
+                            yrcn.printn("WARNING: The characters (){}[]<>= must be alone so '" + tokens[r].val + "' has been skipped.");
+                            r++;
+                        }
+                    }
+                    else {
+                        yrcn.printn("ERROR: bad set syntax.");
+                        exitBlock = true;
+                    }
+    
+                    cursorStart = r;
+                    cursorEnd = r-1;
+                }
+                else if (val == yrenv.keywords["pnkeys"]) {
+                    yrcn.printn("");
+                    for (key in yrenv.keywords) {
+                        yrcn.printn(yrKeywordsDetail[key].desc + ": " + yrenv.keywords[key]);
+                    }
+                    yrcn.printn("");
+                    r++;
+    
+                    cursorStart = r;
+                    cursorEnd = r-1;
+                }
+                else if (val == yrenv.keywords["var"]) {
+                    r++;
+                    if (r < end2 && tokens[r].type != "YRTOK_IDENT") {
+                        yrcn.printn("ERROR: must provide a variable name that is not a command.");
+                        exitBlock = true;
+                    }
+                    else {
+                        let vName = tokens[r].val;
+                        if (yrenv.keywords[vName] != undefined) {
+                            yrcn.printn("ERROR: there is already a command named '" + vName + "'.");
+                            exitBlock = true;
+                        }
+                        else {
+                            yrenv.contexts[yrenv.currentContext].heap[vName] = "";
+                            r++;
+                            if (r < end2 && tokens[r].type == "YRTOK_ASSIGN") {
+                                r++;
+        
+                                let setStart = r;
+                                let setEnd = r;
+    
+                                while (r < end2 && tokens[r].type != "YRTOK_EOB") {
+                                    r++;
+                                    setEnd++;
+                                }
+                                    
+                                yrRun(tokens,setStart, setEnd);
+                                yrenv.contexts[yrenv.currentContext].heap[vName] = yrenv.memory;
+                            }
+                            else {
+                                yrcn.printn("ERROR: bad variable assignment.");
+                                exitBlock = true;
+                            }
+                        }
+                    }
+    
+                    cursorStart = r;
+                    cursorEnd = r-1;
+                }
+                else if (val == yrenv.keywords["if"]) {
+                    let validSyn = true;
+                    r++;
+                    let chkStart = r;
+                    let chkEnd = r;
+                    let runStart = r;
+                    let runEnd = r;
+                    while (r < end2 && !(tokens[r].type == "YRTOK_KEYWORD" && tokens[r].val == yrenv.keywords["do"])) {
+                        chkEnd++;
+                        r++;
+                    }
+                    if (r >= end2) {
+                        yrcn.printn("ERROR: bad " + yrenv.keywords["if"] + " syntax [1].");
+                        exitBlock = true;
+                    }
+                    else {
+                        if (!(tokens[r].type == "YRTOK_KEYWORD" && tokens[r].val == yrenv.keywords["do"])) {
+                            yrcn.printn("ERROR: bad " + yrenv.keywords["if"] + " syntax [2].");
+                            exitBlock = true;
+                        }
+                        else {
+                            r++;
+                            runStart = r;
+                            runEnd = r;
+                            let inBlock = false;
+                            let runLines = new Array();
+                            while (r < end2 && !(tokens[r].type == "YRTOK_KEYWORD" && tokens[r].val == yrenv.keywords["end"])) {
+                                if (tokens[r].type == "YRTOK_EOB") {
+                                    runLines.push({ "start": runStart, "end": runEnd});
+                                    r++;
+                                    runStart = r;
+                                    runEnd = r;
+                                    inBlock = false;
+                                }
+                                else {
+                                    inBlock = true;
+                                    runEnd++;
+                                    r++;
+                                }
+                            }
+                            if (inBlock) {
+                                runLines.push({ "start": runStart, "end": runEnd});
+                            }
+                            if (r >= end2) {
+                                yrcn.printn("ERROR: bad " + yrenv.keywords["if"] + " syntax [3].");
+                                exitBlock = true;
+                            }
+                            else {
+                                r++;
+                                let runIf = false;
+                                yrRun(tokens,chkStart,chkEnd);
+                                if (yrenv.memory != null) {
+                                    if (parseFloat(yrenv.memory.val) != 0)  runIf = true;
+                                }
+    
+                                if (runIf) {
+                                    for (let w = 0; w < runLines.length; w++) {
+                                        yrRun(tokens,runLines[w].start,runLines[w].end);
+                                    }
+                                }
+                                else
+                                    yrcn.print("");
+                            }
+                        }
+                    }
+                }
+                else if (val == yrenv.keywords["while"]) {
+                    let validSyn = true;
+                    r++;
+                    let chkStart = r;
+                    let chkEnd = r;
+                    let runStart = r;
+                    let runEnd = r;
+                    while (r < end2 && !(tokens[r].type == "YRTOK_KEYWORD" && tokens[r].val == yrenv.keywords["do"])) {
+                        chkEnd++;
+                        r++;
+                    }
+                    if (r >= end2) {
+                        yrcn.printn("ERROR: bad " + yrenv.keywords["if"] + " syntax [1].");
+                        exitBlock = true;
+                    }
+                    else {
+                        if (!(tokens[r].type == "YRTOK_KEYWORD" && tokens[r].val == yrenv.keywords["do"])) {
+                            yrcn.printn("ERROR: bad " + yrenv.keywords["if"] + " syntax [2].");
+                            exitBlock = true;
+                        }
+                        else {
+                            r++;
+                            runStart = r;
+                            runEnd = r;
+                            let inBlock = false;
+                            let runLines = new Array();
+                            while (r < end2 && !(tokens[r].type == "YRTOK_KEYWORD" && tokens[r].val == yrenv.keywords["end"])) {
+                                if (tokens[r].type == "YRTOK_EOB") {
+                                    runLines.push({ "start": runStart, "end": runEnd});
+                                    r++;
+                                    runStart = r;
+                                    runEnd = r;
+                                    inBlock = false;
+                                }
+                                else {
+                                    inBlock = true;
+                                    runEnd++;
+                                    r++;
+                                }
+                            }
+                            if (inBlock) {
+                                runLines.push({ "start": runStart, "end": runEnd});
+                            }
+                            if (r >= end2) {
+                                yrcn.printn("ERROR: bad " + yrenv.keywords["if"] + " syntax [3].");
+                                exitBlock = true;
+                            }
+                            else {
+                                r++;
+                                let exitWhile = false;
+                                let loopCount = 0;
+                                while (!exitWhile && loopCount < yrenv.settings.maxloop) {
+                                    yrRun(tokens,chkStart,chkEnd);
+                                    if (yrenv.memory == null) 
+                                        exitWhile = true;
+                                    else if (parseFloat(yrenv.memory.val) == 0)  
+                                        exitWhile = true;
+    
+                                    if (!exitWhile) {
+                                        for (let w = 0; w < runLines.length; w++) {
+                                            yrRun(tokens,runLines[w].start,runLines[w].end);
+                                        }
+                                    }
+    
+                                    loopCount++;
+                                }
+                            }
+                        }
+                    }
+                }
+                else {
+                    yrcn.printn("ERROR: unknown command.");
+                    exitBlock = true;
+                    r++;
+                }
+            }
+            else if (type == "YRTOK_COMP") {
+                r++;
+                if (cursorStart>cursorEnd) {
+                    yrcn.printn("ERROR: invalid compare statement [1].");
+                    exitBlock = true;
+                }
+                else {
+                    let cmpT = val;
+                    yrRun(tokens,cursorStart,cursorEnd);
+                    if (yrenv.memory == null || !(yrenv.memory.type == "YRTOK_INTEGER" || yrenv.memory.type == "YRTOK_DOUBLE" || yrenv.memory.type == "YRTOK_STRING")) {
+                        yrcn.printn("ERROR: invalid compare statement [2].");
+                        exitBlock = true;
+                    }
+                    else {
+                        let lVal = yrenv.memory;
+                        let rVal = null;
+                        cursorStart = r;
+                        cursorEnd = r;
+                        while (r < end2 && tokens[r].type != "YRTOK_BREAK") {
+                            cursorEnd++;
+                            r++;
+                        }
+                        yrRun(tokens,cursorStart,cursorEnd);
+                        if (yrenv.memory == null || !(yrenv.memory.type == "YRTOK_INTEGER" || yrenv.memory.type == "YRTOK_DOUBLE" || yrenv.memory.type == "YRTOK_STRING")) {
+                            yrcn.printn("ERROR: invalid compare statement [3].");
+                            exitBlock = true;
+                        }
+                        else {
+                            rVal = yrenv.memory;
+                            let lVal2 = 0;
+                            let rVal2 = 0;
+                            if (lVal.type == "YRTOK_INTEGER" || lVal.type == "YRTOK_DOUBLE") lVal2 = parseFloat(lVal.val);
+                            else if (lVal.type == "YRTOK_STRING") lVal = lVal.val.length;
+                            if (rVal.type == "YRTOK_INTEGER" || rVal.type == "YRTOK_DOUBLE") rVal2 = parseFloat(rVal.val);
+                            else if (rVal.type == "YRTOK_STRING") rVal = rVal.val.length;
+                            let cRes = 0;
+                            if (cmpT == yrenv.keywords["eq"] || cmpT == yrenv.keywords["gteq"] || cmpT == yrenv.keywords["lteq"]) {
+                                if (lVal2 == rVal2) cRes = 1;
+                            }
+                            if (cmpT == yrenv.keywords["lt"] || cmpT == yrenv.keywords["lteq"]) {
+                                if (lVal2 < rVal2) cRes = 1;
+                            }
+                            if (cmpT == yrenv.keywords["gt"] || cmpT == yrenv.keywords["gteq"]) {
+                                if (lVal2 > rVal2) cRes = 1;
+                            }
+                            if (cmpT == yrenv.keywords["neq"]) {
+                                if (lVal2 != rVal2) cRes = 1;
+                            }
+                            yrenv.memory = { "type": "YRTOK_INTEGER", "val": cRes };
+                        }
+                    }
+                }
+                cursorStart = r;
+                cursorEnd = r-1;
+            }
+            else if (type == "YRTOK_IDENT" && r + 1 < end2 && tokens[r+1].type == "YRTOK_ASSIGN") {
+                let v2 = yrGetVariable(val);
+                r++;
+                if (v2 != null) {
+    
+                    if (r < end2 && tokens[r].type == "YRTOK_ASSIGN") {
+                        r++;
+        
+                        let setStart = r;
+                        let setEnd = r;
+    
+                        while (r < end2 && tokens[r].type != "YRTOK_EOB") {
+                            r++;
+                            setEnd++;
+                        }
+                            
+                        yrRun(tokens,setStart, setEnd);
+                        yrenv.contexts[yrenv.currentContext].heap[val] = yrenv.memory;
+                    }
+                    else {
+                        yrenv.memory = v2;
+                        yrcn.print("");
+                        cursorStart = r;
+                        cursorEnd = r;   
+                    }
+                }
+                else {
+                    exitBlock = true;
+                }
+            }
+            else if (type2 == "YRTOK_STRING") {
+                yrenv.memory = { "type": type, "val": val };
+                yrcn.print("");
+                cursorStart = r;
+                cursorEnd = r;
+                r++;
+            }
+            else if (type2 == "YRTOK_DOUBLE" || type2 == "YRTOK_INTEGER") {
+                let mEval = val2;
+                cursorStart = r;
+                cursorEnd = r;
+                let r2 = r+1;
+                if (r2<end2 && (tokens[r2].type == "YRTOK_PLUS" || tokens[r2].type == "YRTOK_MINUS" || tokens[r2].type == "YRTOK_STAR" || tokens[r2].type == "YRTOK_SLASH")) {
+                    r++;
+                    while(r<end2 && (tokens[r].type == "YRTOK_PLUS" || tokens[r].type == "YRTOK_MINUS" || tokens[r].type == "YRTOK_STAR" || tokens[r].type == "YRTOK_SLASH")) {
+                        mEval += tokens[r].val;
+                        r++;
+                        let type3 = "";
+                        let val3 = "";
+                        if (r < end2) {
+                            type3 = tokens[r].type;
+                            val3 = tokens[r].val;
+                            if (type3 == "YRTOK_IDENT") {
+                                let v3 = yrGetVariable(val3);
+                                if (v3 == null) {
+                                    exitBlock = true;
+                                }
+                                else {
+                                    type3 = v3.type;
+                                    val3 = v3.val;
+                                }
+                            }
+                        }
+                        if (type3 == "YRTOK_INTEGER" || type3 == "YRTOK_DOUBLE") {
+                            mEval+=val3;
+                            r++;
+                        }
+                    }
+                }
+                else {
+                    r++;
+                }
+                if ((mEval + "").length > 0) {
+                    yrenv.memory = { "type": "YRTOK_DOUBLE", "val": eval(mEval)};
+                }
+                yrcn.print("");
+                cursorEnd = r;
+            }
+            else {
+                yrcn.printn("ERROR: '" + tokens[r].val + "' not valid.");
+                exitBlock = true;
+            }
+        }
+
+        if (runEnd) {
+            yrRun(tokens,runEndStart,end);
+        }
+    }
+    
+}
+
+function yrConsole(cnID) {
+    this.cn = document.getElementById(cnID);
+    this.prompt = "yr > ";
+    this.atLine = 0;
+    this.lines = new Array();
+    this.init = function() {
+        this.cn.value = "Enter 'help' to get started.\n";
+        this.ready();
+    };
+    this.printwln = function(msg, nL) {
+        this.cn.value += msg;
+        if (nL) this.cn.value += "\n";
+        this.cn.scrollTop = this.cn.scrollHeight;
+    };
+    this.printn = function(msg) {
+        this.printwln(msg,true);
+    };
+    this.print = function(msg) {
+        this.printwln(msg,false);
+    };
+    this.ready = function() {
+        this.cn.value += "yr > ";
+    };
+    this.process = function() {
+        let cVal = this.cn.value;
+        let cValLn = cVal.split("\n");
+        let activeLine = cValLn[cValLn.length - 1];
+        activeLine = activeLine.substring(this.prompt.length);
+        activeLine = activeLine.replace(/(^\s*(?!.+)\r+\n+)|(\s+\r+\n+(?!.+)$)/g, "");
+        this.lines.push(activeLine);
+
+        let tok = yrLex(activeLine);
+        this.atLine = this.lines[this.lines.length - 1];
+        yrcn.printn("");
+        yrRun(tok,0,-1);
+
+        this.ready();
+    };
+    this.keyCap = function(key) {
+        let cVal = this.cn.value;
+        let cValLn = cVal.split("\n");
+        switch (key) {
+            case 'ArrowLeft':
+            case 'ArrowUp':
+            case 'Backspace':
+                if (cValLn[cValLn.length - 1].length == this.prompt.length) return false;
+                break;
+            case 'Enter':
+                this.process();
+                return false;
+                break;
+        }
+        return true;
+    };
+}
+
+var yrenv;
+var yrcn ;
+
+document.addEventListener("DOMContentLoaded", function() {
+    yrenv = new yrEnvironment({});
+    yrcn = new yrConsole("console");
+
+    yrcn.cn.addEventListener("keydown", function(e) {
+        this.setSelectionRange(this.value.length,this.value.length);
+        if (!yrcn.keyCap(e.key)) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    });
+
+    yrcn.init();
+});
+
+let genHelp = ['\n---------------------------------\n\nyrScript lets you rename keywords however you like!\n \
+\nHere are your current commands and how to use them:\n',
+'You can enter normal math syntax, i.e. 1 + 2 * 3 - 4 / 5\n\
+You can also combine values with a comma, i.e. \"Ham\",\" and \",\"cheese.\"\n\n---------------------------------\n'];
