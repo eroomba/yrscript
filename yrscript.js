@@ -9,26 +9,7 @@ let yrReserved = {
     "YRTOK_HASH": "#",
     "YRTOK_BREAK": " "
 }
-let yrKeywordsDefault = {
-    "help": "help",
-    "print": "print",
-    "echo": "echo",
-    "skey": "setkey",
-    "pnkeys": "printkeys",
-    "var": "set",
-    "assign": "to",
-    "if": "if",
-    "while": "while",
-    "do": "do",
-    "end": "end",
-    "eq": "eq",
-    "neq": "neq",
-    "lt": "lt",
-    "gt": "gt",
-    "lteq": "lteq",
-    "gteq": "gteq",
-    "eob": "\;"
-};
+let yrKeywordsDefault = yrKeywordPreset["DEFAULT"].settings;
 let yrKeywords = yrKeywordsDefault;
 
 let yrKeywordsDetail = {
@@ -137,17 +118,17 @@ let yrKeywordType = {
 }
 
 let yrSettingsDefault = {
-    "maxloop": 10
+    "maxloop": 100000
 }
 
 let ctxIdx = 0;
 
 function yrKEnc(key) {
-    return key.replace("=","{{eq}}").replace("<","{{lt}}").replace(">","{{gt}}").replace("!","{{bang}}");
+    return key.replace(/=/gi,"{{eq}}").replace(/</gi,"{{lt}}").replace(/>/gi,"{{gt}}").replace(/!/gi,"{{bang}}");
 }
 
 function yrKDec(key) {
-    return key.replace("{{eq}}","=").replace("{{lt}}","<").replace("{{gt}}",">").replace("{{bang}}","!");
+    return key.replace(/{{eq}}/gi,"=").replace(/{{lt}}/gi,"<").replace(/{{gt}}/gi,">").replace(/{{bang}}/gi,"!");
 }
 
 function yrContext(op) {
@@ -653,6 +634,10 @@ function yrRun(tokens,start,end) {
                                     }
     
                                     loopCount++;
+                                }
+
+                                if (loopCount >= yrenv.settings.maxloop) {
+                                    yrcn.printn("WARNING: exited loop because max loop count (" + yrenv.settings.maxloop + ") was reached.");
                                 }
                             }
                         }
