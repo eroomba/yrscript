@@ -16,6 +16,7 @@ let yrKeywordsDefault = {
     "skey": "setkey",
     "pnkeys": "printkeys",
     "var": "set",
+    "assign": "to",
     "if": "if",
     "while": "while",
     "do": "do",
@@ -26,7 +27,6 @@ let yrKeywordsDefault = {
     "gt": "gt",
     "lteq": "lteq",
     "gteq": "gteq",
-    "assign": "to",
     "eob": "\;"
 };
 let yrKeywords = yrKeywordsDefault;
@@ -34,75 +34,93 @@ let yrKeywords = yrKeywordsDefault;
 let yrKeywordsDetail = {
     "help": {
         "desc": "Get help",
-        "help": "{key} [COMMAND]"
+        "help": "{key} [COMMAND]",
+        "label": "Get help"
     },
     "print": {
         "desc": "Print a string",
-        "help": "{key} \"[PRINT_STRING]\""
+        "help": "{key} \"[PRINT_STRING]\"",
+        "label": "Print string"
     },
     "echo": {
         "desc": "Print last result",
-        "help": "{key}"
+        "help": "{key}",
+        "label": "Print last result"
     },
     "skey": {
         "desc": "Set keyword",
-        "help": "{key} [OLD_VALUE] [NEW_VALUE]"
+        "help": "{key} [OLD_VALUE] [NEW_VALUE]",
+        "label": "Sey keyword"
     },
     "pnkeys": {
         "desc": "Print current keywords",
-        "help": "{key}"
+        "help": "{key}",
+        "label": "Print current keywords"
     },
     "var": {
         "desc": "Variable declaration",
-        "help": "{key} [VARIABLE_NAME] = [VALUE]"
-    },
-    "if": {
-        "desc": "If statement. Run [CODE_TO_RUN] if [CODE_TO_CHECK] is true (not equal to 0).",
-        "help": "{key} [CODE_TO_CHECK] {do-cmd} [CODE_TO_RUN] {end-cmd}"
-    },
-    "while": {
-        "desc": "While loop. Run [CODE_TO_RUN] until [CODE_TO_CHECK] isn't true (equals 0).\n(It won't loop more times than the [maxloop] setting for safety)",
-        "help": "{key} [CODE_TO_CHECK] {do-cmd} [CODE_TO_RUN] {end-cmd}"
-    },
-    "do": {
-        "desc": "Do command. Run [CODE_TO_RUN] until {end-cmd}.",
-        "help": "{key} [CODE_TO_RUN] {end-cmd}"
-    },
-    "end": {
-        "desc": "End a set of commands.",
-        "help": "{do-cmd} [CODE_TO_CHECK] {key}"
-    },
-    "eq": {
-        "desc": "Equal to.",
-        "help": "[VALUE] {key} [VALUE]"
-    },
-    "neq": {
-        "desc": "Not equal to.",
-        "help": "[VALUE] {key} [VALUE]"
-    },
-    "gt": {
-        "desc": "Greater than.",
-        "help": "[VALUE] {key} [VALUE]"
-    },
-    "lt": {
-        "desc": "Less than.",
-        "help": "[VALUE] {key} [VALUE]"
-    },
-    "gteq": {
-        "desc": "Greater than or equal to.",
-        "help": "[VALUE] {key} [VALUE]"
-    },
-    "lteq": {
-        "desc": "Less than or equal to.",
-        "help": "[VALUE] {key} [VALUE]"
+        "help": "{key} [VARIABLE_NAME] = [VALUE]",
+        "label": "Declare a variable"
     },
     "assign": {
         "desc": "Assign value to variable.",
-        "help": "[VARIABLE_NAME] {key} [VALUE]"
+        "help": "[VARIABLE_NAME] {key} [VALUE]",
+        "label": "Assign a value"
+    },
+    "if": {
+        "desc": "If statement. Run [CODE_TO_RUN] if [CODE_TO_CHECK] is true (not equal to 0).",
+        "help": "{key} [CODE_TO_CHECK] {do-cmd} [CODE_TO_RUN] {end-cmd}",
+        "label": "If statement"
+    },
+    "while": {
+        "desc": "While loop. Run [CODE_TO_RUN] until [CODE_TO_CHECK] isn't true (equals 0).\n(It won't loop more times than the [maxloop] setting for safety)",
+        "help": "{key} [CODE_TO_CHECK] {do-cmd} [CODE_TO_RUN] {end-cmd}",
+        "label": "While statement"
+    },
+    "do": {
+        "desc": "Do command. Run [CODE_TO_RUN] until {end-cmd}.",
+        "help": "{key} [CODE_TO_RUN] {end-cmd}",
+        "label": "Begin code block"
+    },
+    "end": {
+        "desc": "End a set of commands.",
+        "help": "{do-cmd} [CODE_TO_CHECK] {key}",
+        "label": "End code block"
+    },
+    "eq": {
+        "desc": "Equal to.",
+        "help": "[VALUE] {key} [VALUE]",
+        "label": "Is equal"
+    },
+    "neq": {
+        "desc": "Not equal to.",
+        "help": "[VALUE] {key} [VALUE]",
+        "label": "Not equal"
+    },
+    "gt": {
+        "desc": "Greater than.",
+        "help": "[VALUE] {key} [VALUE]",
+        "label": "Greater than"
+    },
+    "lt": {
+        "desc": "Less than.",
+        "help": "[VALUE] {key} [VALUE]",
+        "label": "Less than"
+    },
+    "gteq": {
+        "desc": "Greater than or equal to.",
+        "help": "[VALUE] {key} [VALUE]",
+        "label": "Greater than or equal to"
+    },
+    "lteq": {
+        "desc": "Less than or equal to.",
+        "help": "[VALUE] {key} [VALUE]",
+        "label": "Less than or equal to"
     },
     "eob": {
         "desc": "End the current block of code.",
-        "help": "[CODE]{key}"
+        "help": "[CODE]{key}",
+        "label": "End a statement"
     }
 
 }
@@ -123,6 +141,14 @@ let yrSettingsDefault = {
 }
 
 let ctxIdx = 0;
+
+function yrKEnc(key) {
+    return key.replace("=","{{eq}}").replace("<","{{lt}}").replace(">","{{gt}}").replace("!","{{bang}}");
+}
+
+function yrKDec(key) {
+    return key.replace("{{eq}}","=").replace("{{lt}}","<").replace("{{gt}}",">").replace("{{bang}}","!");
+}
 
 function yrContext(op) {
     this.id = "<ctx" + ctxIdx++ + ">";
@@ -205,26 +231,26 @@ function yrLex(code) {
 
             tokens.push({"type": "YRTOK_STRING", "val": val });
         }
-        else if (cReserved[code[c]] != undefined && cReserved[code[c]] != null) {
-            if (cReserved[code[c]] == "YRTOK_BREAK" && detectBreakCount > 0) {
+        else if (cReserved[yrKEnc(code[c])] != undefined && cReserved[yrKEnc(code[c])] != null) {
+            if (cReserved[yrKEnc(code[c])] == "YRTOK_BREAK" && detectBreakCount > 0) {
                 //detectBreakCount--;
                 //tokens.push({ "type": cTokens[code[c]], "val": code[c]});
             }
-            else if (cReserved[code[c]] != "YRTOK_BREAK") {
-                tokens.push({ "type": cReserved[code[c]], "val": code[c]});
+            else if (cReserved[yrKEnc(code[c])] != "YRTOK_BREAK") {
+                tokens.push({ "type": cReserved[yrKEnc(code[c])], "val": code[c]});
             }
             c++;
         }
-        else if (code[c] == yrenv.keywords["eob"]) {
-            tokens.push({"type": "YRTOK_EOB", "val": code[c]});
+        else if (yrKEnc(code[c]) == yrenv.keywords["eob"]) {
+            tokens.push({"type": "YRTOK_EOB", "val": yrKEnc(code[c])});
             c++;
         }
-        else if (/^[a-zA-Z]$/.test(code[c]) || "{}()[]=<>".indexOf(code[c])>=0) {
+        else if (/^[a-zA-Z]$/.test(code[c]) || "{}()[]=<>!".indexOf(code[c])>=0) {
             let val = "";
             let hVal = "";
             let hasVal = false;
-            while(!hasVal && c < code.length && (/^[a-zA-Z0-9]$/.test(code[c]) || "{}()[]=<>".indexOf(code[c])>=0)) {
-                if ("{}()[]=<>".indexOf(code[c])>=0 && !hasVal) {
+            while(!hasVal && c < code.length && (/^[a-zA-Z0-9=<>!]$/.test(code[c]) || "{}()[]<>=!".indexOf(code[c])>=0)) {
+                if ("{}()[]".indexOf(code[c])>=0 && !hasVal) {
                     val = code[c] + "";
                     hasVal = true;
                 }
@@ -237,14 +263,14 @@ function yrLex(code) {
             
             let cKeywords = yrFlipDict(yrenv.keywords);
 
-            if (cKeywords[val] != undefined && cKeywords[val] != null) {
-                if (val == yrenv.keywords["do"] && detectBreakCount > 0) {
+            if (cKeywords[yrKEnc(val)] != undefined && cKeywords[yrKEnc(val)] != null) {
+                if (yrKEnc(val) == yrenv.keywords["do"] && detectBreakCount > 0) {
                     detectBreakCount--;
                     tokens.push({ "type": "YRTOK_BREAK", "val": ""});
                 }
                 let kType = "YRTOK_KEYWORD";
-                if (yrKeywordType[cKeywords[val]] != undefined)
-                    kType = yrKeywordType[cKeywords[val]];
+                if (yrKeywordType[cKeywords[yrKEnc(val)]] != undefined)
+                    kType = yrKeywordType[cKeywords[yrKEnc(val)]];
                     
                 tokens.push({"type": kType, "val": val });
             }
@@ -317,7 +343,7 @@ function yrRun(tokens,start,end) {
                 runEndStart = r+1;
             }
             else if (type == "YRTOK_KEYWORD") {
-                if (val == yrenv.keywords["help"]) {
+                if (yrKEnc(val) == yrenv.keywords["help"]) {
                     r++;
                     let hMode = "";
                     if (r < end2 && (tokens[r].type == "YRTOK_IDENT" || tokens[r].type == "YRTOK_KEYWORD" || tokens[r].type == "YRTOK_COMP" || tokens[r].type == "YRTOK_ASSIGN")) {
@@ -331,9 +357,9 @@ function yrRun(tokens,start,end) {
                         let kyFlip = yrFlipDict(yrenv.keywords);
     
                         for (hMode in kyFlip) {
-                            yrcn.printn(hMode);
-                            yrcn.printn(yrKeywordsDetail[kyFlip[hMode]].desc.replace("{do-cmd}",yrenv.keywords["do"]).replace("{end-cmd}",yrenv.keywords["end"]));
-                            yrcn.printn("USAGE: " + yrKeywordsDetail[kyFlip[hMode]].help.replace("{key}",hMode).replace("{do-cmd}",yrenv.keywords["do"]).replace("{end-cmd}",yrenv.keywords["end"]));
+                            yrcn.printn(yrKDec(hMode));
+                            yrcn.printn(yrKeywordsDetail[kyFlip[hMode]].desc.replace("{do-cmd}",yrKDev(yrenv.keywords["do"])).replace("{end-cmd}",yrKDEc(yrenv.keywords["end"])));
+                            yrcn.printn("USAGE: " + yrKeywordsDetail[kyFlip[hMode]].help.replace("{key}",yrKDec(hMode)).replace("{do-cmd}",yrKDev(yrenv.keywords["do"])).replace("{end-cmd}",yrKDec(yrenv.keywords["end"])));
                             yrcn.printn("");
                         }
     
@@ -344,9 +370,9 @@ function yrRun(tokens,start,end) {
                         
                         if (kyFlip[hMode] != undefined && kyFlip[hMode] != null) {
                             yrcn.printn("");
-                            yrcn.printn(hMode);
-                            yrcn.printn(yrKeywordsDetail[kyFlip[hMode]].desc.replace("{do-cmd}",yrenv.keywords["do"]).replace("{end-cmd}",yrenv.keywords["end"]));
-                            yrcn.printn("USAGE: " + yrKeywordsDetail[kyFlip[hMode]].help.replace("{key}",hMode).replace("{do-cmd}",yrenv.keywords["do"]).replace("{end-cmd}",yrenv.keywords["end"]));
+                            yrcn.printn(yrKDec(hMode));
+                            yrcn.printn(yrKeywordsDetail[kyFlip[hMode]].desc.replace("{do-cmd}",yrKDec(yrenv.keywords["do"])).replace("{end-cmd}",yrKDec(yrenv.keywords["end"])));
+                            yrcn.printn("USAGE: " + yrKeywordsDetail[kyFlip[hMode]].help.replace("{key}",yrKDec(hMode)).replace("{do-cmd}",yrKDec(yrenv.keywords["do"])).replace("{end-cmd}",yrKDec(yrenv.keywords["end"])));
                             yrcn.printn("");
                         }
                         else {
@@ -357,7 +383,7 @@ function yrRun(tokens,start,end) {
                     cursorStart = r;
                     cursorEnd = r-1;
                 }
-                else if (val == yrenv.keywords["print"]) {
+                else if (yrKEnc(val) == yrenv.keywords["print"]) {
                     let hasPrint = true;
                     let printVal = "";
                     r++;
@@ -391,7 +417,7 @@ function yrRun(tokens,start,end) {
                     cursorStart = r;
                     cursorEnd = r-1;
                 }
-                else if (val == yrenv.keywords["echo"]) {
+                else if (yrKEnc(val) == yrenv.keywords["echo"]) {
                     r++;
                     if (yrenv.memory == null)
                         yrcn.printn("<empty>");
@@ -401,11 +427,11 @@ function yrRun(tokens,start,end) {
                     cursorStart = r;
                     cursorEnd = r-1;
                 }
-                else if (val == yrenv.keywords["skey"]) {
+                else if (yrKEnc(val) == yrenv.keywords["skey"]) {
                     let keyword = "";
                     let newKeyword = "";
                     r++;
-                    if (r < end2 && tokens[r].type == "YRTOK_KEYWORD") {
+                    if (r < end2 && (tokens[r].type == "YRTOK_KEYWORD" || tokens[r].type == "YRTOK_COMP" || tokens[r].type == "YRTOK_ASSIGN")) {
                         keyword = tokens[r].val;
                         r++;
                     }
@@ -414,10 +440,10 @@ function yrRun(tokens,start,end) {
                         r++;
                     }
                     let kyFlip = yrFlipDict(yrenv.keywords);
-                    if (keyword.length > 0 && newKeyword.length > 0 && (kyFlip[keyword] != undefined && kyFlip[keyword] != null)) {
-                        let keyM = kyFlip[keyword];
+                    if (keyword.length > 0 && newKeyword.length > 0 && (kyFlip[yrKEnc(keyword)] != undefined && kyFlip[yrKEnc(keyword)] != null)) {
+                        let keyM = kyFlip[yrKEnc(keyword)];
                         let smallVal = false;
-                        if (keyM[newKeyword] != undefined && keyM[newKeyword] != null) {
+                        if (keyM[yrKEnc(newKeyword)] != undefined && keyM[yrKEnc(newKeyword)] != null) {
                             yrcn.printn("ERROR: '" + newKeyword + "' is already a command.");
                             exitBlock = true;
                         }
@@ -426,18 +452,19 @@ function yrRun(tokens,start,end) {
                             exitBlock = true;
                         }
                         else {
-                            yrKeywords[keyM] = newKeyword;
+                            yrKeywords[yrKEnc(keyM)] = yrKEnc(newKeyword);
                             yrenv.setVocab();
                             yrcn.printn("set '" + keyword + "' to '" + newKeyword + "'");
-                            if ("(){}[]=<>".indexOf(newKeyword)>=1) smallVal = true;
+                            if ("(){}[]".indexOf(newKeyword)>=1) smallVal = true;
                         }
 
                         if (smallVal && tokens[r].type == "YRTOK_IDENT") {
-                            yrcn.printn("WARNING: The characters (){}[]<>= must be alone so '" + tokens[r].val + "' has been skipped.");
+                            yrcn.printn("WARNING: The characters (){}[] must be alone so '" + tokens[r].val + "' has been skipped.");
                             r++;
                         }
                     }
                     else {
+                        yrcn.printn("keyw: '" + keyword + "', newkeyw: '" + newKeyword + "', kenc: '" + yrKEnc(keyword) + "', nkenc: '" + yrKEnc(newKeyword) + "'");
                         yrcn.printn("ERROR: bad set syntax.");
                         exitBlock = true;
                     }
@@ -445,10 +472,10 @@ function yrRun(tokens,start,end) {
                     cursorStart = r;
                     cursorEnd = r-1;
                 }
-                else if (val == yrenv.keywords["pnkeys"]) {
+                else if (yrKEnc(val) == yrenv.keywords["pnkeys"]) {
                     yrcn.printn("");
                     for (key in yrenv.keywords) {
-                        yrcn.printn(yrKeywordsDetail[key].desc + ": " + yrenv.keywords[key]);
+                        yrcn.printn(yrKeywordsDetail[key].desc + ": " + yrKDec(yrenv.keywords[key]));
                     }
                     yrcn.printn("");
                     r++;
@@ -456,7 +483,7 @@ function yrRun(tokens,start,end) {
                     cursorStart = r;
                     cursorEnd = r-1;
                 }
-                else if (val == yrenv.keywords["var"]) {
+                else if (yrKEnc(val) == yrenv.keywords["var"]) {
                     r++;
                     if (r < end2 && tokens[r].type != "YRTOK_IDENT") {
                         yrcn.printn("ERROR: must provide a variable name that is not a command.");
@@ -464,7 +491,7 @@ function yrRun(tokens,start,end) {
                     }
                     else {
                         let vName = tokens[r].val;
-                        if (yrenv.keywords[vName] != undefined) {
+                        if (yrenv.keywords[yrKEnc(vName)] != undefined) {
                             yrcn.printn("ERROR: there is already a command named '" + vName + "'.");
                             exitBlock = true;
                         }
@@ -495,24 +522,24 @@ function yrRun(tokens,start,end) {
                     cursorStart = r;
                     cursorEnd = r-1;
                 }
-                else if (val == yrenv.keywords["if"]) {
+                else if (yrKEnc(val) == yrenv.keywords["if"]) {
                     let validSyn = true;
                     r++;
                     let chkStart = r;
                     let chkEnd = r;
                     let runStart = r;
                     let runEnd = r;
-                    while (r < end2 && !(tokens[r].type == "YRTOK_KEYWORD" && tokens[r].val == yrenv.keywords["do"])) {
+                    while (r < end2 && !(tokens[r].type == "YRTOK_KEYWORD" && yrKEnc(tokens[r].val) == yrenv.keywords["do"])) {
                         chkEnd++;
                         r++;
                     }
                     if (r >= end2) {
-                        yrcn.printn("ERROR: bad " + yrenv.keywords["if"] + " syntax [1].");
+                        yrcn.printn("ERROR: bad " + yrKDec(yrenv.keywords["if"]) + " syntax [1].");
                         exitBlock = true;
                     }
                     else {
-                        if (!(tokens[r].type == "YRTOK_KEYWORD" && tokens[r].val == yrenv.keywords["do"])) {
-                            yrcn.printn("ERROR: bad " + yrenv.keywords["if"] + " syntax [2].");
+                        if (!(tokens[r].type == "YRTOK_KEYWORD" && yrKEnc(tokens[r].val) == yrenv.keywords["do"])) {
+                            yrcn.printn("ERROR: bad " + yrKDec(yrenv.keywords["if"]) + " syntax [2].");
                             exitBlock = true;
                         }
                         else {
@@ -521,7 +548,7 @@ function yrRun(tokens,start,end) {
                             runEnd = r;
                             let inBlock = false;
                             let runLines = new Array();
-                            while (r < end2 && !(tokens[r].type == "YRTOK_KEYWORD" && tokens[r].val == yrenv.keywords["end"])) {
+                            while (r < end2 && !(tokens[r].type == "YRTOK_KEYWORD" && yrKEnc(tokens[r].val) == yrenv.keywords["end"])) {
                                 if (tokens[r].type == "YRTOK_EOB") {
                                     runLines.push({ "start": runStart, "end": runEnd});
                                     r++;
@@ -539,7 +566,7 @@ function yrRun(tokens,start,end) {
                                 runLines.push({ "start": runStart, "end": runEnd});
                             }
                             if (r >= end2) {
-                                yrcn.printn("ERROR: bad " + yrenv.keywords["if"] + " syntax [3].");
+                                yrcn.printn("ERROR: bad " + yrKDec(yrenv.keywords["if"]) + " syntax [3].");
                                 exitBlock = true;
                             }
                             else {
@@ -561,24 +588,24 @@ function yrRun(tokens,start,end) {
                         }
                     }
                 }
-                else if (val == yrenv.keywords["while"]) {
+                else if (yrKEnc(val) == yrenv.keywords["while"]) {
                     let validSyn = true;
                     r++;
                     let chkStart = r;
                     let chkEnd = r;
                     let runStart = r;
                     let runEnd = r;
-                    while (r < end2 && !(tokens[r].type == "YRTOK_KEYWORD" && tokens[r].val == yrenv.keywords["do"])) {
+                    while (r < end2 && !(tokens[r].type == "YRTOK_KEYWORD" && yrKEnc(tokens[r].val) == yrenv.keywords["do"])) {
                         chkEnd++;
                         r++;
                     }
                     if (r >= end2) {
-                        yrcn.printn("ERROR: bad " + yrenv.keywords["if"] + " syntax [1].");
+                        yrcn.printn("ERROR: bad " + yrKDec(yrenv.keywords["if"]) + " syntax [1].");
                         exitBlock = true;
                     }
                     else {
-                        if (!(tokens[r].type == "YRTOK_KEYWORD" && tokens[r].val == yrenv.keywords["do"])) {
-                            yrcn.printn("ERROR: bad " + yrenv.keywords["if"] + " syntax [2].");
+                        if (!(tokens[r].type == "YRTOK_KEYWORD" && yrKEnc(tokens[r].val) == yrenv.keywords["do"])) {
+                            yrcn.printn("ERROR: bad " + yrKDec(yrenv.keywords["while"]) + " syntax [2].");
                             exitBlock = true;
                         }
                         else {
@@ -587,7 +614,7 @@ function yrRun(tokens,start,end) {
                             runEnd = r;
                             let inBlock = false;
                             let runLines = new Array();
-                            while (r < end2 && !(tokens[r].type == "YRTOK_KEYWORD" && tokens[r].val == yrenv.keywords["end"])) {
+                            while (r < end2 && !(tokens[r].type == "YRTOK_KEYWORD" && yrKEnc(tokens[r].val) == yrenv.keywords["end"])) {
                                 if (tokens[r].type == "YRTOK_EOB") {
                                     runLines.push({ "start": runStart, "end": runEnd});
                                     r++;
@@ -605,7 +632,7 @@ function yrRun(tokens,start,end) {
                                 runLines.push({ "start": runStart, "end": runEnd});
                             }
                             if (r >= end2) {
-                                yrcn.printn("ERROR: bad " + yrenv.keywords["if"] + " syntax [3].");
+                                yrcn.printn("ERROR: bad " + yrKDec(yrenv.keywords["while"]) + " syntax [3].");
                                 exitBlock = true;
                             }
                             else {
@@ -673,16 +700,16 @@ function yrRun(tokens,start,end) {
                             if (rVal.type == "YRTOK_INTEGER" || rVal.type == "YRTOK_DOUBLE") rVal2 = parseFloat(rVal.val);
                             else if (rVal.type == "YRTOK_STRING") rVal = rVal.val.length;
                             let cRes = 0;
-                            if (cmpT == yrenv.keywords["eq"] || cmpT == yrenv.keywords["gteq"] || cmpT == yrenv.keywords["lteq"]) {
+                            if (yrKEnc(cmpT) == yrenv.keywords["eq"] || yrKEnc(cmpT) == yrenv.keywords["gteq"] || yrKEnc(cmpT) == yrenv.keywords["lteq"]) {
                                 if (lVal2 == rVal2) cRes = 1;
                             }
-                            if (cmpT == yrenv.keywords["lt"] || cmpT == yrenv.keywords["lteq"]) {
+                            if (yrKEnc(cmpT) == yrenv.keywords["lt"] || yrKEnc(cmpT) == yrenv.keywords["lteq"]) {
                                 if (lVal2 < rVal2) cRes = 1;
                             }
-                            if (cmpT == yrenv.keywords["gt"] || cmpT == yrenv.keywords["gteq"]) {
+                            if (yrKEnc(cmpT) == yrenv.keywords["gt"] || yrKEnc(cmpT) == yrenv.keywords["gteq"]) {
                                 if (lVal2 > rVal2) cRes = 1;
                             }
-                            if (cmpT == yrenv.keywords["neq"]) {
+                            if (yrKEnc(cmpT) == yrenv.keywords["neq"]) {
                                 if (lVal2 != rVal2) cRes = 1;
                             }
                             yrenv.memory = { "type": "YRTOK_INTEGER", "val": cRes };

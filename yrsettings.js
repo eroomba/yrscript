@@ -1,0 +1,43 @@
+let yrKeywordPreset = {
+    "C-JS": {
+        "help": "help",
+        "print": "print",
+        "echo": "echo",
+        "skey": "setkey",
+        "pnkeys": "printky",
+        "var": "var",
+        "if": "if",
+        "while": "while",
+        "do": "{",
+        "end": "}",
+        "eq": "eq",
+        "neq": "neq",
+        "lt": "lt",
+        "gt": "gt",
+        "lteq": "lteq",
+        "gteq": "gteq",
+        "assign": "to",
+        "eob": "\;"
+    },
+    "BASIC": {
+        "help": "HELP",
+        "print": "ECHO",
+        "echo": "",
+        "skey": "SETKEY",
+        "pnkeys": "SHOWKEYS",
+        "var": "SET",
+        "if": "IF",
+        "while": "WHILE",
+        "do": "DO",
+        "end": "END",
+        "eq": "eq",
+        "neq": "neq",
+        "lt": "lt",
+        "gt": "gt",
+        "lteq": "lteq",
+        "gteq": "gteq",
+        "assign": "TO",
+        "eob": "\;"
+    },
+};
+
