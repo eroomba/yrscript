@@ -11,6 +11,12 @@ body {
     color: #EEEEEE;
 }
 
+.clr {
+    clear: both;
+    width: 0px;
+    height: 0px;
+}
+
 #wrapper {
     width: 100%;
     height: 100%;
@@ -26,7 +32,6 @@ body {
 #header {
     flex-shrink: 1;
     width: 100%;
-    line-height: 2em;
     padding: 0em 0.5em;
     background-color: dimgrey;
     color: #EEEEEE;
@@ -36,11 +41,39 @@ body {
     user-select: none; /* Standard */
 }
 
+#header .title {
+    float: left;
+    line-height: 2em;
+    z-index: 51000;
+}
+
+#header .menu {
+    float: right;
+    line-height: 2em;
+}
+
+#header .menu a,
+#header .menu a:visited,
+#header .menu a:active,
+#header .menu a:hover {
+    display: inline-block;
+    padding: 0px 0.5em;
+    text-decoration: none;
+    color: #333333;
+    font-size: 0.9em;
+}
+
+#header .menu a:active,
+#header .menu a:hover {
+    color: #EEEEEE;
+}
+
 #console-wrapper {
     width: 100%;
     flex-grow: 1;
     padding: 0px 0px 0.5em 0px;
     margin: 0px;
+    z-index: 50000;
 }
 
 #console {
@@ -63,4 +96,71 @@ body {
     border: 0px;
     outline-width: 0;
     outline: none;
+}
+
+#settings {
+    position: fixed;
+    height: 60%;
+    max-width: 60%;
+    min-width: 20%;
+    z-index: 90000;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    background: #222222;
+    border: 1px solid #444444;
+    padding: 0em;
+}
+
+#settings-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#settings-title {
+    background: #444444;
+    color: White;
+    text-align: left;
+    padding: 0.2em 0.5em;
+    flex-shrink: 1;
+}
+
+#settings-body-wr {
+    flex-grow: 1;
+    height: 100%;
+    overflow: auto;
+}
+
+#settings-body {
+    padding: 0.4em;
+}
+
+#settings-body table tr td {
+    white-space: no-wrap;
+    padding: 0.3em;
+    font-size: 0.9em;
+    text-align: left;
+}
+
+#settings-body table tr td input {
+    width: 2em;
+    background-color: #444444;
+    border: 0px;
+    color: #EEEEEE;
+    padding: 0.3em;
+    font-size: 1em;
+}
+#settings-body table tr td.buttons {
+    text-align: center;
+}
+
+#settings-bg {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    left: 0px;
+    background-color: #000000;
+    opacity: 0.5;
 }
