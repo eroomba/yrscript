@@ -230,11 +230,11 @@ function yrLex(code) {
             tokens.push({"type": "YRTOK_EOB", "val": yrKEnc(code[c])});
             c++;
         }
-        else if (/^[a-zA-Z]$/.test(code[c]) || "{}()[]=<>!_".indexOf(code[c])>=0) {
+        else if (/^[a-zA-Z]$/.test(code[c]) || "{}()[]=<>!_@".indexOf(code[c])>=0) {
             let val = "";
             let hVal = "";
             let hasVal = false;
-            while(!hasVal && c < code.length && (/^[a-zA-Z0-9=<>!]$/.test(code[c]) || "{}()[]<>=!_".indexOf(code[c])>=0)) {
+            while(!hasVal && c < code.length && (/^[a-zA-Z0-9=<>!]$/.test(code[c]) || "{}()[]<>=!_@^".indexOf(code[c])>=0)) {
                 if ("{}()[]".indexOf(code[c])>=0 && !hasVal) {
                     val = code[c] + "";
                     hasVal = true;
@@ -834,6 +834,69 @@ function yrEditor(edID) {
 
         let tok = yrLex(code);
         yrRun(tok,0,-1);
+    };
+    this.export = function() {
+        let setKeysCode = "";
+        for (key in yrenv.keywords) {
+            if (key != "eob")
+                if (yrKeywordPreset["DEFAULT"].settings[key] != yrenv.keywords[key])
+                    setKeysCode += yrKeywordPreset["DEFAULT"].settings["skey"]+ " " + yrKDec(yrKeywordPreset["DEFAULT"].settings[key]) + " " + yrKDec(yrenv.keywords[key]) + ";\n";
+        }
+        if (setKeysCode.length > 0) {
+            setKeysCode = "# Code to set keywords to current values\n# that should only be run from default settings\n" + setKeysCode + "\n";
+        }
+
+        let codeOut = setKeysCode + this.ed.value.replace("# Enter code directly here and type 'editor' in the console to run it.\n","");
+        let element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(codeOut));
+        element.setAttribute('download', "code.yrs");
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+    };
+    this.fileSelect = function() {
+        let element = document.createElement('input');
+        element.setAttribute("type", "file");
+        element.setAttribute("id","upload");
+        element.setAttribute("accept", ".txt,.yrs,text/text");
+        element.setAttribute("name","codeImport");
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        document.getElementById( 'upload' ).addEventListener( 'change', yred.import, false );
+
+        element.click();
+
+        //document.body.removeChild(element);
+    };
+    this.import = function(evt) {
+        let fl_files = evt.target.files; // JS FileList object
+
+        // use the 1st file from the list
+        let fl_file = fl_files[0];
+
+        let reader = new FileReader(); // built in API
+
+        let display_file = ( e ) => { // set the contents of the <textarea>
+            yred.ed.innerHTML = e.target.result;
+        };
+
+        let on_reader_load = ( fl ) => {
+            console.info( '. file reader load', fl );
+            return display_file; // a function
+        };
+
+        // Closure to capture the file information.
+        reader.onload = on_reader_load(fl_file);
+
+        // Read the file as text.
+        reader.readAsText(fl_file);
+        
+        document.body.removeChild(document.getElementById("upload"));
     };
     this.init = function() {
         this.ed.innerHTML = this.header;

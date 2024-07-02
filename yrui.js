@@ -11,10 +11,14 @@ function yrToggleSplit() {
     if (wrap.classList.contains("split")) {
         wrap.classList.remove("split");
         document.getElementById("settings-split").innerHTML = "editor";
+        document.getElementById("settings-export").style.display = "none";
+        document.getElementById("settings-import").style.display = "none";
     }
     else {
         wrap.classList.add("split");
         document.getElementById("settings-split").innerHTML = "console";
+        document.getElementById("settings-export").style.display = "inline-block";
+        document.getElementById("settings-import").style.display = "inline-block";
     }
 }
 
