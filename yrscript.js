@@ -124,11 +124,11 @@ let yrSettingsDefault = {
 let ctxIdx = 0;
 
 function yrKEnc(key) {
-    return key.replace(/=/gi,"{{eq}}").replace(/</gi,"{{lt}}").replace(/>/gi,"{{gt}}").replace(/!/gi,"{{bang}}");
+    return key.replace(/=/gi,"{{eq}}").replace(/</gi,"{{lt}}").replace(/>/gi,"{{gt}}").replace(/!/gi,"{{bang}}").replace("-","{{dash}}");
 }
 
 function yrKDec(key) {
-    return key.replace(/{{eq}}/gi,"=").replace(/{{lt}}/gi,"<").replace(/{{gt}}/gi,">").replace(/{{bang}}/gi,"!");
+    return key.replace(/{{eq}}/gi,"=").replace(/{{lt}}/gi,"<").replace(/{{gt}}/gi,">").replace(/{{bang}}/gi,"!").replace("{{dash}}","-");
 }
 
 function yrContext(op) {
@@ -230,11 +230,11 @@ function yrLex(code) {
             tokens.push({"type": "YRTOK_EOB", "val": yrKEnc(code[c])});
             c++;
         }
-        else if (/^[a-zA-Z]$/.test(code[c]) || "{}()[]=<>!_@".indexOf(code[c])>=0) {
+        else if (/^[a-zA-Z]$/.test(code[c]) || "{}()[]=<>!_@^-".indexOf(code[c])>=0) {
             let val = "";
             let hVal = "";
             let hasVal = false;
-            while(!hasVal && c < code.length && (/^[a-zA-Z0-9=<>!]$/.test(code[c]) || "{}()[]<>=!_@^".indexOf(code[c])>=0)) {
+            while(!hasVal && c < code.length && (/^[a-zA-Z0-9=<>!]$/.test(code[c]) || "{}()[]<>=!_@^-".indexOf(code[c])>=0)) {
                 if ("{}()[]".indexOf(code[c])>=0 && !hasVal) {
                     val = code[c] + "";
                     hasVal = true;
@@ -350,8 +350,8 @@ function yrRun(tokens,start,end) {
     
                         for (hMode in kyFlip) {
                             yrcn.printn(yrKDec(hMode));
-                            yrcn.printn(yrKeywordsDetail[kyFlip[hMode]].desc.replace("{do-cmd}",yrKDev(yrenv.keywords["do"])).replace("{end-cmd}",yrKDEc(yrenv.keywords["end"])));
-                            yrcn.printn("USAGE: " + yrKeywordsDetail[kyFlip[hMode]].help.replace("{key}",yrKDec(hMode)).replace("{do-cmd}",yrKDev(yrenv.keywords["do"])).replace("{end-cmd}",yrKDec(yrenv.keywords["end"])));
+                            yrcn.printn(yrKeywordsDetail[kyFlip[hMode]].desc.replace("{do-cmd}",yrKDec(yrenv.keywords["do"])).replace("{end-cmd}",yrKDec(yrenv.keywords["end"])));
+                            yrcn.printn("USAGE: " + yrKeywordsDetail[kyFlip[hMode]].help.replace("{key}",yrKDec(hMode)).replace("{do-cmd}",yrKDec(yrenv.keywords["do"])).replace("{end-cmd}",yrKDec(yrenv.keywords["end"])));
                             yrcn.printn("");
                         }
     
