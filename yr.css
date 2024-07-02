@@ -85,7 +85,8 @@ a.close-x:hover {
     z-index: 50000;
 }
 
-#console {
+#console,
+#editor {
     width: 100%;
     height: 100%;
     border: 0px;
@@ -100,6 +101,28 @@ a.close-x:hover {
     outline-width: 0;
     outline: none;
 }
+
+#console-wrapper #editor {
+    display: none;
+}
+
+#console-wrapper.split {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
+
+#console-wrapper.split #console,
+#console-wrapper.split #editor {
+    width: 50%;
+}
+
+#console-wrapper.split #editor {
+    display: block;
+    border-left: 3px solid #666666;
+}
+
 
 #console:focus {
     border: 0px;

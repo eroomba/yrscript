@@ -15,11 +15,12 @@
 <div id="header">
     <div class="title">yr&nbsp;Script&nbsp;</div>
     <div class="menu">
+        <a href="javascript: yrToggleSplit();" id="settings-split">editor</a>
         <a href="javascript: yrOpenSettings();">settings</a>
     </div>
     <div class="clear"></div>
 </div>
-<div id="console-wrapper"><textarea id="console" onkeydown="yrcn.keyCap()"></textarea></div><div>
+<div id="console-wrapper"><textarea id="console" onkeydown="yrcn.keyCap()"></textarea><textarea id="editor" onkeydown="return yred.keyCap(event);"></textarea></div><div>
 </div>
 <script src="yrsettings.js?v=0.0.1"></script>
 <script src="yrscript.js?v=0.0.1"></script>

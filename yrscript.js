@@ -180,8 +180,12 @@ function yrLex(code) {
     let c = 0;
     while(c < code.length) {
         if (code[c] == yrReserved["YRTOK_HASH"]) {
-            yrcn.print("");
-            c = code.length + 2;
+            c++;
+            while (c < code.length && code[c] != '\n') {
+                console.log(code[c]);
+                c++;
+            }
+            if (c < code.length && code[c] == '\n') c++;
             if (detectBreakCount > 0) detectBreakCount--;
         }
         else if (digits.indexOf(code[c]) >= 0) {
@@ -226,11 +230,11 @@ function yrLex(code) {
             tokens.push({"type": "YRTOK_EOB", "val": yrKEnc(code[c])});
             c++;
         }
-        else if (/^[a-zA-Z]$/.test(code[c]) || "{}()[]=<>!".indexOf(code[c])>=0) {
+        else if (/^[a-zA-Z]$/.test(code[c]) || "{}()[]=<>!_".indexOf(code[c])>=0) {
             let val = "";
             let hVal = "";
             let hasVal = false;
-            while(!hasVal && c < code.length && (/^[a-zA-Z0-9=<>!]$/.test(code[c]) || "{}()[]<>=!".indexOf(code[c])>=0)) {
+            while(!hasVal && c < code.length && (/^[a-zA-Z0-9=<>!]$/.test(code[c]) || "{}()[]<>=!_".indexOf(code[c])>=0)) {
                 if ("{}()[]".indexOf(code[c])>=0 && !hasVal) {
                     val = code[c] + "";
                     hasVal = true;
@@ -254,6 +258,9 @@ function yrLex(code) {
                     kType = yrKeywordType[cKeywords[yrKEnc(val)]];
                     
                 tokens.push({"type": kType, "val": val });
+            }
+            else if (val == yred.runCmd) {
+                tokens.push({"type": "YRTOK_EDITOR", "val": val });
             }
             else {
                 tokens.push({"type": "YRTOK_IDENT", "val": val });
@@ -316,6 +323,10 @@ function yrRun(tokens,start,end) {
             }
     
             if ((val2 + "").length == 0) {
+                r++;
+            }
+            else if (type == "YRTOK_EDITOR") {
+                yred.process();
                 r++;
             }
             else if (type == "YRTOK_EOB") {
@@ -416,9 +427,17 @@ function yrRun(tokens,start,end) {
                         keyword = tokens[r].val;
                         r++;
                     }
+                    else if (r < end2 && tokens[r].type == "YRTOK_EDITOR") {
+                        yrcn.printn("ERROR: You cannot reassign the '" + yred.runCmd + "' command.");
+                        exitBlock = true;
+                    }
                     if (r < end2 && tokens[r].type == "YRTOK_IDENT") {
                         newKeyword = tokens[r].val;
                         r++;
+                    }
+                    if (newKeyword == yred.runCmd) {
+                        yrcn.printn("ERROR: You cannot use the '" + yred.runCmd + "' command.");
+                        exitBlock = true;
                     }
                     let kyFlip = yrFlipDict(yrenv.keywords);
                     if (keyword.length > 0 && newKeyword.length > 0 && (kyFlip[yrKEnc(keyword)] != undefined && kyFlip[yrKEnc(keyword)] != null)) {
@@ -795,6 +814,37 @@ function yrRun(tokens,start,end) {
     
 }
 
+function yrEditor(edID) {
+    this.ed = document.getElementById(edID);
+    this.runCmd = "editor";
+    this.header = "# Editor\n# Enter code directly here and type '" + this.runCmd + "' in the console to run it.\n# The hash symbol (#) denotes a comment\n\n";
+    this.process = function() {
+        let codePre = this.ed.value;
+        codePre = codePre.replace(/\r\n/gi, "\n");
+        let lines = codePre.split(/\n/gi);
+        let code = "";
+        for (let l = 0; l < lines.length; l++) {
+            if (lines[l].length > 0 && lines[l][0] != '#') {
+                let codePre2 = lines[l].split(/#/gi);
+                code += codePre2[0];
+                if (codePre2[0][codePre2.length - 1] != ';')
+                    code += ";";
+            }
+        }
+
+        let tok = yrLex(code);
+        yrRun(tok,0,-1);
+    };
+    this.init = function() {
+        this.ed.innerHTML = this.header;
+    };
+    this.keyCap = function(event) {
+        let val = this.ed.value;
+
+        return true;
+    };
+}
+
 function yrConsole(cnID) {
     this.cn = document.getElementById(cnID);
     this.prompt = "yr > ";
@@ -853,10 +903,12 @@ function yrConsole(cnID) {
 
 var yrenv;
 var yrcn ;
+var yred;
 
 document.addEventListener("DOMContentLoaded", function() {
     yrenv = new yrEnvironment({});
     yrcn = new yrConsole("console");
+    yred = new yrEditor("editor");
 
     yrcn.cn.addEventListener("keydown", function(e) {
         this.setSelectionRange(this.value.length,this.value.length);
@@ -867,6 +919,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     yrcn.init();
+    yred.init();
 });
 
 let genHelp = ['\n---------------------------------\n\nyrScript lets you rename keywords however you like!\n \
