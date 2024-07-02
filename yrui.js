@@ -6,6 +6,18 @@ function yrHTMLDec(value) {
     return value.replace("----","{{").replace("-__-","}}");
 }
 
+function yrToggleSplit() {
+    let wrap = document.getElementById("console-wrapper");
+    if (wrap.classList.contains("split")) {
+        wrap.classList.remove("split");
+        document.getElementById("settings-split").innerHTML = "editor";
+    }
+    else {
+        wrap.classList.add("split");
+        document.getElementById("settings-split").innerHTML = "console";
+    }
+}
+
 function yrOpenSettings() {
     
     if (document.getElementById("settings-bg") == undefined) {
