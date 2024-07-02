@@ -27,7 +27,7 @@ let yrKeywordPreset = {
         "settings": {
             "help": "help",
             "print": "print",
-            "echo": "echo",
+            "echo": "rprint",
             "skey": "setkey",
             "pnkeys": "printky",
             "var": "var",
@@ -50,23 +50,46 @@ let yrKeywordPreset = {
         "settings": {
             "help": "HELP",
             "print": "ECHO",
-            "echo": "",
+            "echo": "ECHO-R",
             "skey": "SETKEY",
             "pnkeys": "SHOWKEYS",
-            "var": "SET",
+            "var": "DIM",
             "if": "IF",
             "while": "WHILE",
             "do": "DO",
             "end": "END",
-            "eq": "{{eq}}",
-            "neq": "NOT{{eq}}",
-            "lt": "{{lt}}",
-            "gt": "{{gt}}",
-            "lteq": "{{lt}}{{eq}}",
-            "gteq": "{{gt}}{{eq}}",
-            "assign": "GETS",
+            "eq": "EQUALS",
+            "neq": "NOT_EQUAL",
+            "lt": "LESS_THAN",
+            "gt": "GREATER_THAN",
+            "lteq": "LT_EQUALS",
+            "gteq": "GT_EQUALS",
+            "assign": "{{eq}}",
             "eob": "\;"
         }
     },
+    "MAGIC": {
+        "description": "MAGICAL",
+        "settings": {
+            "help": "Hlp",
+            "print": "Pc",
+            "echo": "Ec",
+            "skey": "Sk",
+            "pnkeys": "SK",
+            "var": "@",
+            "if": "IF",
+            "while": "WHILE",
+            "do": "(",
+            "end": ")",
+            "eq": "=",
+            "neq": "!=",
+            "lt": "<",
+            "gt": ">",
+            "lteq": "<=",
+            "gteq": ">=",
+            "assign": "^",
+            "eob": "\;"
+        }
+    }
 };
 
